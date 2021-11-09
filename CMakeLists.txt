@@ -7,10 +7,14 @@ project(dens VERSION ${DENS_VERSION})
 set(is_root_project OFF)	# indicate if this is the top-level project
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
   set(is_root_project ON)
+  set(DENS_CONFIGURE_CI_SCRIPTS ON)
   message(STATUS "${PROJECT_NAME} is top level")
 endif()
 
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/.appveyor.yml.in" "${CMAKE_CURRENT_SOURCE_DIR}/.appveyor.yml")
+if(NOT "${CI_BUILD}" AND "${DENS_CONFIGURE_CI_SCRIPTS}")
+  message(STATUS "Configuring ${CMAKE_CURRENT_SOURCE_DIR}/.appveyor.yml.in")
+  configure_file("${CMAKE_CURRENT_SOURCE_DIR}/.appveyor.yml.in" "${CMAKE_CURRENT_SOURCE_DIR}/.appveyor.yml")
+endif()
 
 option(DENS_BUILD_TESTS "Build dens tests" ${is_root_project})
 
