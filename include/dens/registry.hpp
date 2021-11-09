@@ -15,7 +15,7 @@ concept Component = not std::is_reference_v<T> and not std::is_const_v<T> and st
 ///
 template <Component... Types>
 struct exclude {
-	inline static detail::sign_t const signs[sizeof...(Types)] = {detail::sign_t::make<Types>()...};
+	inline static detail::sign_t const signs[] = {detail::sign_t::make<Types>()...};
 };
 ///
 /// \brief Specialization for null typelist
@@ -94,6 +94,18 @@ class registry {
 	template <Component T>
 	bool attached(entity e) const;
 	///
+	/// \brief Check if e has T attached
+	///
+	template <Component... Types>
+		requires(sizeof...(Types) > 0)
+	bool all_attached(entity e) const;
+	///
+	/// \brief Check if e has T attached
+	///
+	template <Component... Types>
+		requires(sizeof...(Types) > 0)
+	bool any_attached(entity e) const;
+	///
 	/// \brief Detach T from e
 	/// \returns true if T was attached to e
 	///
@@ -154,9 +166,8 @@ entity registry::make_entity(std::string name) {
 	if (name.empty()) { name = make_name(id); }
 	auto [it, _] = m_records.emplace(entity{id, m_id}, record{std::move(name)});
 	if constexpr (sizeof...(Types) > 0) {
-		detail::sign_t const signs[] = {detail::sign_t::make<Types>()...};
 		m_map.register_types<Types...>();
-		detail::archetype& arch = m_map.get_or_make(signs);
+		detail::archetype& arch = m_map.get_or_make(detail::signs_v<Types...>);
 		arch.push_back(it->first);
 		(emplace_back<Types>(it->second, arch), ...);
 	}
@@ -206,8 +217,7 @@ T& registry::attach(entity e, Args&&... args) {
 		migrate_to(rec, &m_map.copy_append<T>(*rec.arch));
 	} else {
 		// no existing components, use archetype with only T, to be pushed
-		detail::sign_t const signs[] = {detail::sign_t::make<T>()};
-		rec.arch = &m_map.get_or_make(signs);
+		rec.arch = &m_map.get_or_make(detail::signs_v<T>);
 		rec.arch->push_back(e);
 	}
 	assert(rec.arch);
@@ -223,6 +233,20 @@ T& registry::attach(entity e, Args&&... args) {
 template <Component T>
 bool registry::attached(entity e) const {
 	if (auto it = m_records.find(e); it != m_records.end() && it->second.arch) { return it->second.arch->find<T>(); }
+	return false;
+}
+
+template <Component... Types>
+	requires(sizeof...(Types) > 0)
+bool registry::all_attached(entity e) const {
+	if (auto it = m_records.find(e); it != m_records.end() && it->second.arch) { return it->second.arch->has_all(detail::signs_v<Types...>); }
+	return false;
+}
+
+template <Component... Types>
+	requires(sizeof...(Types) > 0)
+bool registry::any_attached(entity e) const {
+	if (auto it = m_records.find(e); it != m_records.end() && it->second.arch) { return it->second.arch->has_any(detail::signs_v<Types...>); }
 	return false;
 }
 
@@ -245,10 +269,9 @@ T& registry::get(entity e) const {
 
 template <Component... Types, Component... Exclude>
 std::vector<entity_view<Types...>> registry::view(exclude<Exclude...>) const {
-	static detail::sign_t const signs[] = {detail::sign_t::make<Types>()...};
 	std::vector<entity_view<Types...>> ret;
 	for (auto const& [_, arch] : m_map.m_map) {
-		if (arch.has_all(signs) && !arch.has_any(exclude<Exclude...>::signs)) { append(ret, arch); }
+		if (arch.has_all(detail::signs_v<Types...>) && !arch.has_any(exclude<Exclude...>::signs)) { append(ret, arch); }
 	}
 	return ret;
 }

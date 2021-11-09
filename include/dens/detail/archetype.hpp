@@ -179,8 +179,7 @@ class archetype_map {
 
 	template <typename... Types>
 	archetype const* find() const noexcept {
-		static auto const combined = sign_t::make<Types...>().combined;
-		if (auto it = m_map.find(combined); it != m_map.end()) { return &it->second; }
+		if (auto it = m_map.find(detail::signs_v<Types...>); it != m_map.end()) { return &it->second; }
 		return {};
 	}
 

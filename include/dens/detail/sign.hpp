@@ -28,4 +28,8 @@ struct sign_t {
 		return ret;
 	}
 };
+
+template <typename... Types>
+	requires(sizeof...(Types) > 0)
+sign_t const signs_v[sizeof...(Types)] = {sign_t::make<Types>()...};
 } // namespace dens::detail
