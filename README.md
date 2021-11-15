@@ -13,14 +13,15 @@ A lightweight and simple archetype-based entity-component framework. `dens` is s
 - Multiple simultaneous registries
 - Components stored directly as (type-erased) `std::vector<T>`
 - Minimal type erasure: only one `void*` and `reinterpret_cast` throughout library
+- Base class templates for systems and groups (of systems)
 
 ### Limitations
 
-- Supports a maximum of one component instance per type per entity
+- Supports a maximum of one component instance per type per entity / concrete system instance per group
 
 ## Usage
 
-### Example
+### Examples
 
 ```cpp
 #include <iostream>
@@ -55,6 +56,43 @@ int main() {
 }
 ```
 
+```cpp
+#include <dens/system_group.hpp>
+
+struct task_scheduler {};
+
+struct sys_data {
+  task_scheduler& tasks;
+  float dt{};
+};
+
+using sys_base = dens::system<sys_data>;
+using sys_group = dens::system_group<sys_data>;
+
+class foo_system : public sys_base {
+  void update(dens::registry const& registry) {
+    float const dt = data().dt;
+    // ...
+  }
+};
+
+class scene {
+ public:
+  scene() {
+    m_root.attach<foo_system>();
+  }
+
+  void tick(float dt) {
+    m_root.update(m_registry, sys_data{.tasks = m_tasks, .dt = dt});
+  }
+
+ private:
+  task_scheduler m_tasks;
+  dens::registry m_registry;
+  sys_group m_root;
+};
+```
+
 ### Requirements
 
 - CMake
@@ -87,6 +125,8 @@ query<P> => [A0, A1, A2]
 query<Q, P> => [A0, A2]
 ```
 
+#### Archetype
+
 In `dens`, an `archetype` is a vector of uniquely identified `tarray`s, and a vector of entities, where each `tarray` holds a `std::vector<T>`. Each "column" represents a unique `entity` and its attached components. The sizes of all these vectors in an archetype are always equal: this is a required invariant.
 
 ```
@@ -101,11 +141,21 @@ archetype<A, B>
 
 An `entity` is a strongly typed pair of IDs (identifying the `registry` and `entity` each), which also functions as a primary key into an internal database of `record`s, maintained by the `registry`. A `record` identifies an entity's owning `archetype` (if any) and its index among the columns, and is updated whenever an entity changes its archetype or is swapped with another in the same archetype (index changed). A swap-to-back-and-pop approach is used whenever columns need to be moved, minimizing the number of column adjustments (at the cost of columns being stored in an unordered fashion).
 
+#### Registry
+
 `registry` is the primary database and user-facing interface, owning all `archetype`s and `record`s. A new `record` is created for each entity, initially with no associated `archetype`. As components are attached / detached, `archetype`s are fetched / created and components added / moved as necessary. Since components are stored as `std::vector<T>`s, each `T` must be move constructible (and _will_ be relocated on archetype migration). Destroying an entity erases its corresponding column from its `archetype` (if any) and removes its `record`. Such "destroyed" entities can be reused if needed: a record will simply be recreated for the same ID<sup>**1**</sup>.
 
 > _<sup>**1**</sup>attempting to attach components to a default constructed entity / one not owned by the registry in question will trigger an assert._
 
 `registry::view<T...>()` returns a vector of `entity_view<T...>`, which comprises of an entity and references to its components (as `std::tuple<T&>`). This list is built by probing existing archetypes and adding the columns of those which have at least all `T...`s to the result. An optional `exclude<T...>` argument can be passed to `view()`, which will be treated as a type blocklist (archetypes that do have any of those components will be skipped).
+
+#### System
+
+`dens` does not use / expect global / static data. Thus `system<Data>` is a class template where `Data` is a customizable type, a const reference to which must be passed to each system's `update()`. `system<Data>` is polymorphic and intended to be derived from to implement update-able systems. During updates a derived type may use `.data()` to obtain the passed `Data const&`<sup>**2**</sup>.
+
+> _<sup>**2**</sup>attempting to access `.data()` outside `update()` will trigger an assert._
+
+`system_group<Data>` derives from `system<Data>` and is capable of attaching unique instances of derived systems, each associated with a signed `order` of execution (default `0`). It can also be derived from and attached, to form a tree of groups. The root group will update all attached systems in a depth-first manner. All groups are updated on the main thread, `Data` can be used for delegating tasks during an update (as demonstrated in the example above).
 
 ## Contributing
 
