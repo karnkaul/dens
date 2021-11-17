@@ -24,9 +24,6 @@ target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_20)
 target_include_directories(${PROJECT_NAME} SYSTEM INTERFACE include)
 add_subdirectory(include/dens)
 
-get_target_property(sources ${PROJECT_NAME} SOURCES)
-source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES ${sources})
-
 if(DENS_BUILD_TESTS)
   enable_testing()
   add_subdirectory(tests)
