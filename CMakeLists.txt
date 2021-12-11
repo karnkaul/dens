@@ -22,7 +22,17 @@ add_library(${PROJECT_NAME} INTERFACE)
 add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_20)
 target_include_directories(${PROJECT_NAME} SYSTEM INTERFACE include)
-add_subdirectory(include/dens)
+set(includes
+  include/dens/detail/archetype.hpp
+  include/dens/detail/sign.hpp
+  include/dens/detail/tarray.hpp
+  include/dens/entity.hpp
+  include/dens/registry.hpp
+  include/dens/system_group.hpp
+  include/dens/system.hpp
+)
+target_sources(${PROJECT_NAME} INTERFACE ${includes})
+source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES ${includes})
 
 if(DENS_BUILD_TESTS)
   enable_testing()
