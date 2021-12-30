@@ -5,7 +5,7 @@ set(FETCHCONTENT_QUIET OFF)
 FetchContent_Declare(
   dtest
   GIT_REPOSITORY https://github.com/karnkaul/dtest
-  GIT_TAG 8c07e2c
+  GIT_TAG 0ca8c64
 )
 FetchContent_MakeAvailable(dtest)
 FetchContent_GetProperties(dtest)
