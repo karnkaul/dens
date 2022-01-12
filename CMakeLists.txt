@@ -1,21 +1,19 @@
 cmake_minimum_required(VERSION 3.14)
 enable_language(CXX)
 
-project(dens)
+set(project_name dens)
+set(${project_name}_version 1.0.1)
+set(cxx_standard cxx_std_20)
 
+project(${project_name} VERSION ${${project_name}_version})
 set(is_root_project OFF)	# indicate if this is the top-level project
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
   set(is_root_project ON)
-  set(DENS_CONFIGURE_CI_SCRIPTS ON)
   message(STATUS "${PROJECT_NAME} is top level")
 endif()
 
-if(NOT "${CI_BUILD}" AND "${DENS_CONFIGURE_CI_SCRIPTS}")
-  message(STATUS "Configuring ${CMAKE_CURRENT_SOURCE_DIR}/.appveyor.yml.in")
-  configure_file("${CMAKE_CURRENT_SOURCE_DIR}/.appveyor.yml.in" "${CMAKE_CURRENT_SOURCE_DIR}/.appveyor.yml")
-endif()
-
 option(DENS_BUILD_TESTS "Build dens tests" ${is_root_project})
+option(DENS_INSTALL ${is_root_project})
 
 # cmake-utils
 include(FetchContent)
@@ -28,8 +26,7 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(cmake-utils)
 FetchContent_GetProperties(cmake-utils)
 
-set(${PROJECT_NAME}_version 1.0.0)
-set(${PROJECT_NAME}_soversion 1)
+set(${PROJECT_NAME}_soversion ${PROJECT_VERSION_MAJOR})
 add_library(${PROJECT_NAME} INTERFACE)
 add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 set_property(TARGET ${PROJECT_NAME} PROPERTY VERSION ${${PROJECT_NAME}_version})
@@ -54,8 +51,10 @@ target_sources(${PROJECT_NAME} PRIVATE
 get_target_property(sources ${PROJECT_NAME} SOURCES)
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES ${sources})
 
-include("${cmake-utils_SOURCE_DIR}/cmake-utils.cmake")
-install_and_export_target(TARGET ${PROJECT_NAME})
+if(DENS_INSTALL)
+  include("${cmake-utils_SOURCE_DIR}/cmake-utils.cmake")
+  install_and_export_target(TARGET ${PROJECT_NAME})
+endif()
 
 if(DENS_BUILD_TESTS)
   enable_testing()

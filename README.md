@@ -1,6 +1,6 @@
 # dens
 
-[![Build status](https://ci.appveyor.com/api/projects/status/v6c113r44hw4ndry?svg=true)](https://ci.appveyor.com/project/karnkaul/dens)
+[![Build Status](https://github.com/karnkaul/dens/actions/workflows/ci.yml/badge.svg)](https://github.com/karnkaul/dens/actions/workflows/ci.yml)
 
 A lightweight and simple archetype-based entity-component framework. `dens` is simply short for "dense" or "densely packed components".
 
