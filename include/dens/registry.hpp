@@ -8,7 +8,7 @@ namespace dens {
 /// \brief Components must be moveable values
 ///
 template <typename T>
-concept Component = not std::is_reference_v<T> and not std::is_const_v<T> and std::is_move_constructible_v<T>;
+concept Component = !std::is_reference_v<T> && !std::is_const_v<T> && std::is_move_constructible_v<T>;
 
 ///
 /// \brief Facade for building exclusion typelists
