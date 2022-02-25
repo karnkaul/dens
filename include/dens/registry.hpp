@@ -78,10 +78,10 @@ class registry {
 	void clear() noexcept;
 
 	///
-	/// \brief Attach a T to e via args
+	/// \brief Attach a T to e
 	///
-	template <Component T, typename... Args>
-	T& attach(entity e, Args&&... args);
+	template <Component T>
+	T& attach(entity e, T t = T{});
 	///
 	/// \brief Attach multiple Types to e (default constructed)
 	///
@@ -202,15 +202,15 @@ inline void registry::clear() noexcept {
 	m_records.clear();
 }
 
-template <Component T, typename... Args>
-T& registry::attach(entity e, Args&&... args) {
+template <Component T>
+T& registry::attach(entity e, T t) {
 	assert(e.id > entity::null_id && e.registry_id == m_id);
 	m_map.register_types<T>();
 	record& rec = get_or_make(e);
 	if (rec.arch) {
 		if (auto array = rec.arch->find<T>()) {
 			// component T already exists, move assign and return
-			array->m_storage.at(rec.index) = T{std::forward<Args>(args)...};
+			array->m_storage.at(rec.index) = std::move(t);
 			return array->m_storage.at(rec.index);
 		}
 		// migrate record to archetype with existing components + T, to be pushed
@@ -222,7 +222,7 @@ T& registry::attach(entity e, Args&&... args) {
 	}
 	assert(rec.arch);
 	// push new T instance
-	auto& vec = rec.arch->emplace_back<T>(std::forward<Args>(args)...);
+	auto& vec = rec.arch->emplace_back<T>(std::move(t));
 	assert(!vec.empty());
 	// update record index
 	rec.index = vec.size() - 1;
